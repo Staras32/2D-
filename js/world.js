@@ -143,92 +143,132 @@ function drawShadow(ctx, x, y, radius) {
   ctx.fill();
 }
 
-/* Humanoid sprite used for the player, NPCs and skeletons: shadow, gradient
-   torso capsule, shaded head with facing-aware eyes, and a weapon that
-   matches the archetype (blade for fighters, glowing staff for mystics). */
-function drawHumanoid(ctx, x, y, radius, baseColor, archetypeId, facing, bob, isDead) {
+/* ---------------- Pixel-art humanoid sprite ----------------
+   Small (20x22) blocky sprite built from hard-edged rects, drawn to an
+   offscreen bitmap with smoothing disabled and cached per (archetype,
+   color, direction, frame) so the per-frame cost is just a drawImage
+   blit. Reads as a classic indie top-down RPG sprite instead of a
+   smooth vector blob. */
+var PW = 20, PH = 22;
+var pixelSpriteCache = {};
+
+function paintPixelFigure(pctx, cloth, cloth2, archetypeId, facingDir, walkFrame) {
+  var outline = '#1a130c';
+  var hair = '#3a2a1a';
+  var skin = '#e0b088';
+  var pants = '#3a3226';
+  var boot = '#1c1712';
+  var belt = '#4a3826';
+
+  var legShift = walkFrame === 1 ? 1 : 0;
+  var showFace = facingDir !== 'up';
+
+  var shapes = [];
+  shapes.push({ x: 5, y: 0, w: 10, h: 4, c: hair });
+  if (showFace) {
+    shapes.push({ x: 6, y: 3, w: 8, h: 6, c: skin });
+    shapes.push({ x: 5, y: 3, w: 1, h: 4, c: hair });
+    shapes.push({ x: 14, y: 3, w: 1, h: 4, c: hair });
+  } else {
+    shapes.push({ x: 5, y: 3, w: 10, h: 6, c: hair });
+  }
+  shapes.push({ x: 2, y: 10 - legShift, w: 2, h: 5, c: cloth2 });
+  shapes.push({ x: 16, y: 10 + legShift, w: 2, h: 5, c: cloth2 });
+  shapes.push({ x: 4, y: 9, w: 12, h: 6, c: cloth });
+  shapes.push({ x: 4, y: 9, w: 12, h: 2, c: cloth2 });
+  shapes.push({ x: 4, y: 14, w: 12, h: 1, c: belt });
+  shapes.push({ x: 6, y: 16 + legShift, w: 3, h: 4, c: pants });
+  shapes.push({ x: 11, y: 16 - legShift, w: 3, h: 4, c: pants });
+  shapes.push({ x: 6, y: 19 + legShift, w: 3, h: 2, c: boot });
+  shapes.push({ x: 11, y: 19 - legShift, w: 3, h: 2, c: boot });
+
+  [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (o) {
+    shapes.forEach(function (s) {
+      pctx.fillStyle = outline;
+      pctx.fillRect(s.x + o[0], s.y + o[1], s.w, s.h);
+    });
+  });
+  shapes.forEach(function (s) {
+    pctx.fillStyle = s.c;
+    pctx.fillRect(s.x, s.y, s.w, s.h);
+  });
+
+  if (showFace) {
+    pctx.fillStyle = outline;
+    pctx.fillRect(8, 7, 1, 1);
+    pctx.fillRect(11, 7, 1, 1);
+  }
+
+  if (archetypeId === 'mystic') {
+    pctx.fillStyle = outline;
+    pctx.fillRect(15, 1, 3, 11);
+    pctx.fillStyle = '#7a5a35';
+    pctx.fillRect(16, 2, 1, 9);
+    pctx.fillStyle = outline;
+    pctx.fillRect(14, -1, 5, 5);
+    var orbGrad = pctx.createRadialGradient(16.5, 1.5, 0, 16.5, 1.5, 2.6);
+    orbGrad.addColorStop(0, '#dff0ff');
+    orbGrad.addColorStop(1, '#5a9ae0');
+    pctx.fillStyle = orbGrad;
+    pctx.beginPath(); pctx.arc(16.5, 1.5, 2.2, 0, Math.PI * 2); pctx.fill();
+  } else {
+    pctx.fillStyle = outline;
+    pctx.fillRect(15, 8, 4, 2);
+    pctx.fillRect(16, 2, 2, 7);
+    pctx.fillStyle = '#8a6a3a';
+    pctx.fillRect(15, 9, 3, 1);
+    pctx.fillStyle = '#d9dfe6';
+    pctx.fillRect(16.5, 3, 1, 6);
+  }
+}
+
+function getPixelFigure(cloth, archetypeId, facingDir, walkFrame) {
+  var key = cloth + '|' + archetypeId + '|' + facingDir + '|' + walkFrame;
+  if (pixelSpriteCache[key]) return pixelSpriteCache[key];
+  var off = document.createElement('canvas');
+  off.width = PW; off.height = PH;
+  var pctx = off.getContext('2d');
+  pctx.imageSmoothingEnabled = false;
+  paintPixelFigure(pctx, cloth, shadeColor(cloth, -0.35), archetypeId, facingDir, walkFrame);
+  pixelSpriteCache[key] = off;
+  return off;
+}
+
+function facingToDir(facing) {
+  var deg = facing;
+  if (deg > -Math.PI * 0.75 && deg < -Math.PI * 0.25) return 'up';
+  if (deg > Math.PI * 0.25 && deg < Math.PI * 0.75) return 'down';
+  return 'side';
+}
+
+function drawHumanoid(ctx, x, y, radius, baseColor, archetypeId, facing, bob, isDead, isMoving, now) {
   var cx = x, cy = y - bob;
   ctx.save();
   if (isDead) ctx.globalAlpha = 0.35;
-
   drawShadow(ctx, x, y, radius);
 
-  var light = shadeColor(baseColor, 0.28);
-  var dark = shadeColor(baseColor, -0.32);
+  var dir = facingToDir(facing);
+  var mirror = dir === 'side' && Math.cos(facing) < 0;
+  var walkFrame = isMoving ? Math.floor((now || 0) * 6.5) % 2 : 0;
+  var sprite = getPixelFigure(baseColor, archetypeId, dir, walkFrame);
 
-  var bw = radius * 1.5, bh = radius * 1.3;
-  var bodyTop = cy - radius * 0.05;
-  var grad = ctx.createLinearGradient(cx, bodyTop, cx, bodyTop + bh);
-  grad.addColorStop(0, light);
-  grad.addColorStop(1, dark);
-  roundRect(ctx, cx - bw / 2, bodyTop, bw, bh, bw * 0.38);
-  ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.lineWidth = 1.6;
-  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-  ctx.stroke();
-
-  var headR = radius * 0.62;
-  var headY = cy - radius * 0.75;
-  ctx.beginPath();
-  ctx.arc(cx, headY, headR, 0, Math.PI * 2);
-  var headGrad = ctx.createRadialGradient(cx - headR * 0.3, headY - headR * 0.3, headR * 0.2, cx, headY, headR);
-  headGrad.addColorStop(0, light);
-  headGrad.addColorStop(1, dark);
-  ctx.fillStyle = headGrad;
-  ctx.fill();
-  ctx.lineWidth = 1.6;
-  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(cx, headY, headR - 0.8, -0.15, Math.PI * 0.55);
-  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-  ctx.lineWidth = 1.2;
-  ctx.stroke();
-
-  var ex = Math.cos(facing) * headR * 0.42;
-  var ey = Math.sin(facing) * headR * 0.38;
-  ctx.fillStyle = 'rgba(20,15,10,0.9)';
-  ctx.beginPath(); ctx.arc(cx + ex - 2.4, headY + ey, 1.6, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx + ex + 2.4, headY + ey, 1.6, 0, Math.PI * 2); ctx.fill();
-
-  var hx = cx + Math.cos(facing) * bw * 0.5;
-  var hy = bodyTop + bh * 0.35 + Math.sin(facing) * bh * 0.25;
-  if (archetypeId === 'mystic') {
-    var tipX = hx - Math.cos(facing) * 8, tipY = hy - Math.sin(facing) * 8 - radius * 0.9;
-    ctx.strokeStyle = '#7a5a35';
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    ctx.moveTo(hx, hy);
-    ctx.lineTo(tipX, tipY);
-    ctx.stroke();
-    var orbGrad = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, 7);
-    orbGrad.addColorStop(0, '#cfe6ff');
-    orbGrad.addColorStop(1, 'rgba(100,160,255,0)');
-    ctx.fillStyle = orbGrad;
-    ctx.beginPath(); ctx.arc(tipX, tipY, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#7ab0ff';
-    ctx.beginPath(); ctx.arc(tipX, tipY, 2.4, 0, Math.PI * 2); ctx.fill();
-  } else {
-    ctx.save();
-    ctx.translate(hx, hy);
-    ctx.rotate(facing + Math.PI / 4);
-    ctx.fillStyle = '#8a6a3a';
-    ctx.fillRect(-4, -3, 8, 5);
-    var bladeGrad = ctx.createLinearGradient(-2, -radius * 1.1, 2, 0);
-    bladeGrad.addColorStop(0, '#eef2f7');
-    bladeGrad.addColorStop(1, '#9aa4b2');
-    ctx.fillStyle = bladeGrad;
-    ctx.fillRect(-1.6, -radius * 1.1, 3.2, radius * 1.1);
-    ctx.restore();
-  }
+  var scale = (radius * 2) / PW;
+  var destW = PW * scale, destH = PH * scale;
+  var prevSmoothing = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
+  ctx.save();
+  ctx.translate(cx, cy - destH * 0.62);
+  if (mirror) ctx.scale(-1, 1);
+  ctx.drawImage(sprite, -destW / 2, 0, destW, destH);
+  ctx.restore();
+  ctx.imageSmoothingEnabled = prevSmoothing;
   ctx.restore();
 }
 
 /* Distinct silhouettes per monster type so the world doesn't read as
    uniform dots: a squat beast, a low wolf with a snout/tail, a spider
    with radiating legs, and a chunky glowing-core golem. */
-function drawMonster(ctx, m, x, y, radius, facing, bob, isDead) {
+function drawMonster(ctx, m, x, y, radius, facing, bob, isDead, now) {
   var cx = x, cy = y - bob;
   var color = m.type.color;
   var light = shadeColor(color, 0.22);
@@ -238,7 +278,7 @@ function drawMonster(ctx, m, x, y, radius, facing, bob, isDead) {
   drawShadow(ctx, x, y, radius);
 
   if (m.type.id === 'skeleton') {
-    drawHumanoid(ctx, x, y, radius, color, 'fighter', facing, bob, false);
+    drawHumanoid(ctx, x, y, radius, color, 'fighter', facing, bob, false, m.moving, now);
     ctx.restore();
     return;
   }
@@ -405,7 +445,7 @@ Game.render = function () {
 
   zone.def.npcs.forEach(function (npc) {
     var sx = npc.x * TS - camX, sy = npc.y * TS - camY;
-    drawHumanoid(ctx, sx, sy, 16, npc.color, npc.weaponless ? 'mystic' : 'fighter', Math.PI / 2, 0, false);
+    drawHumanoid(ctx, sx, sy, 16, npc.color, npc.weaponless ? 'mystic' : 'fighter', Math.PI / 2, 0, false, false, now);
     ctx.fillStyle = '#f2d9a1';
     ctx.font = '11px Georgia';
     ctx.textAlign = 'center';
@@ -417,8 +457,8 @@ Game.render = function () {
     var sx = m.x - camX, sy = m.y - camY;
     if (sx < -40 || sx > W + 40 || sy < -40 || sy > H + 40) return;
     var radius = m.type.id === 'golem' ? 22 : 16;
-    var bob = (!m.dead && m.moving) ? Math.sin(now * 9 + m.uid.length) * radius * 0.08 : 0;
-    drawMonster(ctx, m, sx, sy, radius, m.facing || 0, bob, m.dead);
+    var bob = (!m.dead && m.moving && m.type.id !== 'skeleton') ? Math.sin(now * 9 + m.uid.length) * radius * 0.08 : 0;
+    drawMonster(ctx, m, sx, sy, radius, m.facing || 0, bob, m.dead, now);
     if (!m.dead) {
       drawHealthBar(ctx, sx, sy, radius, m.hp / m.type.hp);
       ctx.fillStyle = m === Game.state.target ? '#f2d9a1' : '#cbb98a';
@@ -430,8 +470,7 @@ Game.render = function () {
 
   var psx = player.x - camX, psy = player.y - camY;
   var pRadius = 17;
-  var pBob = (player.hp > 0 && player.moving) ? Math.sin(now * 9) * pRadius * 0.08 : 0;
-  drawHumanoid(ctx, psx, psy, pRadius, player.color, player.archetypeId, player.facing || Math.PI / 2, pBob, player.hp <= 0);
+  drawHumanoid(ctx, psx, psy, pRadius, player.color, player.archetypeId, player.facing || Math.PI / 2, 0, player.hp <= 0, player.moving, now);
   drawHealthBar(ctx, psx, psy, pRadius, player.hp / player.maxHp, '#4aa04a');
   ctx.fillStyle = '#f2d9a1';
   ctx.font = 'bold 12px Georgia';
