@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aden Chronicles — 2D</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="creation-screen" class="screen">
+  <div class="panel creation-panel">
+    <h1>ADEN CHRONICLES</h1>
+    <p class="subtitle">2D fantasy RPG įkvėptas Lineage 2 Chronicle 6</p>
+
+    <div class="cc-section">
+      <h2>Vardas</h2>
+      <input id="cc-name" type="text" maxlength="16" placeholder="Įvesk personažo vardą">
+    </div>
+
+    <div class="cc-section">
+      <h2>Rasė</h2>
+      <div id="cc-races" class="cc-grid"></div>
+    </div>
+
+    <div class="cc-section">
+      <h2>Kelias</h2>
+      <div id="cc-archetypes" class="cc-grid"></div>
+    </div>
+
+    <div id="cc-summary" class="cc-summary"></div>
+
+    <div class="cc-buttons">
+      <button id="btn-continue" class="btn-secondary" style="display:none">Tęsti išsaugotą žaidimą</button>
+      <button id="btn-create" class="btn-primary">Pradėti žygį</button>
+    </div>
+  </div>
+</div>
+
+<div id="game-screen" class="screen" style="display:none">
+
+  <div id="top-bar">
+    <div id="status-window" class="panel">
+      <div class="status-header">
+        <span id="st-name"></span>
+        <span id="st-classlevel"></span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">CP</span>
+        <div class="bar-bg"><div id="bar-cp" class="bar-fill bar-cp"></div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">HP</span>
+        <div class="bar-bg"><div id="bar-hp" class="bar-fill bar-hp"></div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">MP</span>
+        <div class="bar-bg"><div id="bar-mp" class="bar-fill bar-mp"></div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">XP</span>
+        <div class="bar-bg"><div id="bar-xp" class="bar-fill bar-xp"></div></div>
+      </div>
+    </div>
+
+    <div id="target-window" class="panel" style="display:none">
+      <div class="status-header">
+        <span id="tg-name"></span>
+        <span id="tg-level"></span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-bg"><div id="bar-tg-hp" class="bar-fill bar-hp"></div></div>
+      </div>
+    </div>
+
+    <div id="minimap-window" class="panel">
+      <canvas id="minimap" width="140" height="140"></canvas>
+      <div id="zone-name"></div>
+    </div>
+  </div>
+
+  <canvas id="world-canvas"></canvas>
+
+  <div id="log-window" class="panel">
+    <div id="log-content"></div>
+  </div>
+
+  <div id="hotbar" class="panel">
+    <div class="hotbar-slot" data-slot="1"><span class="hk">1</span><span class="skill-name"></span></div>
+    <div class="hotbar-slot" data-slot="2"><span class="hk">2</span><span class="skill-name"></span></div>
+    <div class="hotbar-slot" data-slot="3"><span class="hk">3</span><span class="skill-name"></span></div>
+    <div class="hotbar-slot" data-slot="4"><span class="hk">4</span><span class="skill-name"></span></div>
+    <div class="hotbar-slot" data-slot="i"><span class="hk">I</span><span class="skill-name">Inventorius</span></div>
+    <div class="hotbar-slot" data-slot="c"><span class="hk">C</span><span class="skill-name">Personažas</span></div>
+  </div>
+
+  <div id="inventory-window" class="panel window-popup" style="display:none">
+    <div class="window-titlebar">Inventorius <span class="close-x" data-close="inventory-window">✕</span></div>
+    <div id="equip-slots" class="equip-slots">
+      <div class="equip-slot" data-eq="weapon">Ginklas<div class="eq-item"></div></div>
+      <div class="equip-slot" data-eq="armor">Šarvai<div class="eq-item"></div></div>
+    </div>
+    <div id="inventory-grid" class="inventory-grid"></div>
+    <div id="gold-display">Auksas: <span id="gold-amount">0</span></div>
+  </div>
+
+  <div id="character-window" class="panel window-popup" style="display:none">
+    <div class="window-titlebar">Personažas <span class="close-x" data-close="character-window">✕</span></div>
+    <div id="character-stats"></div>
+  </div>
+
+  <div id="shop-window" class="panel window-popup" style="display:none">
+    <div class="window-titlebar">Parduotuvė <span class="close-x" data-close="shop-window">✕</span></div>
+    <div id="shop-list"></div>
+    <div id="shop-gold">Auksas: <span id="shop-gold-amount">0</span></div>
+  </div>
+
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/world.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/input.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
