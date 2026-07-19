@@ -74,6 +74,8 @@ Game.createPlayer = function (name, raceId, archetypeId) {
     cooldowns: {},
     buffs: {},
     lastAttackTime: 0,
+    facing: Math.PI / 2,
+    moving: false,
     color: race.id === 'human' ? '#c9a24a' : race.id === 'elf' ? '#6ac97a' :
            race.id === 'darkelf' ? '#8a4ac9' : race.id === 'orc' ? '#c95a4a' : '#a8946a'
   };

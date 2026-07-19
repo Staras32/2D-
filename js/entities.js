@@ -20,7 +20,9 @@ Game.createMonster = function (type, spawn, zoneId, uid) {
     wanderTimer: Math.random() * 3,
     lastAttackTime: 0,
     dead: false,
-    respawnAt: null
+    respawnAt: null,
+    facing: Math.random() * Math.PI * 2,
+    moving: false
   };
 };
 
@@ -44,6 +46,7 @@ Game.updateMonsters = function (dt, now) {
     }
     if (!player || player.zoneId !== Game.state.zoneId || player.hp <= 0) {
       m.state = 'idle';
+      m.moving = false;
       return;
     }
 
@@ -53,15 +56,20 @@ Game.updateMonsters = function (dt, now) {
       m.state = 'chase';
     }
 
+    m.moving = false;
+
     if (m.state === 'chase') {
       if (dToPlayer > m.type.attackRange) {
         var dx = player.x - m.x, dy = player.y - m.y;
         var len = Math.sqrt(dx * dx + dy * dy) || 1;
+        m.facing = Math.atan2(dy, dx);
+        m.moving = true;
         var nx = m.x + (dx / len) * m.type.moveSpeed * dt;
         var ny = m.y + (dy / len) * m.type.moveSpeed * dt;
         if (Game.isWalkable(nx, m.y)) m.x = nx;
         if (Game.isWalkable(m.x, ny)) m.y = ny;
       } else {
+        m.facing = Math.atan2(player.y - m.y, player.x - m.x);
         if (now - m.lastAttackTime >= 1 / m.type.attackSpeed) {
           m.lastAttackTime = now;
           Game.monsterAttack(m, player);
@@ -76,6 +84,8 @@ Game.updateMonsters = function (dt, now) {
       else {
         var dx2 = m.homeX - m.x, dy2 = m.homeY - m.y;
         var len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2) || 1;
+        m.facing = Math.atan2(dy2, dx2);
+        m.moving = true;
         m.x += (dx2 / len2) * m.type.moveSpeed * dt;
         m.y += (dy2 / len2) * m.type.moveSpeed * dt;
       }
@@ -90,6 +100,8 @@ Game.updateMonsters = function (dt, now) {
         var dx3 = m.wanderTargetX - m.x, dy3 = m.wanderTargetY - m.y;
         var d3 = Math.sqrt(dx3 * dx3 + dy3 * dy3);
         if (d3 > 4) {
+          m.facing = Math.atan2(dy3, dx3);
+          m.moving = true;
           var nx3 = m.x + (dx3 / d3) * (m.type.moveSpeed * 0.4) * dt;
           var ny3 = m.y + (dy3 / d3) * (m.type.moveSpeed * 0.4) * dt;
           if (Game.isWalkable(nx3, m.y)) m.x = nx3;

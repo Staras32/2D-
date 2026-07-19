@@ -12,14 +12,17 @@ function dist(x1, y1, x2, y2) {
 
 function updatePlayerMovement(dt) {
   var player = Game.state.player;
-  if (player.hp <= 0) return;
+  if (player.hp <= 0) { player.moving = false; return; }
   var speed = PLAYER_BASE_SPEED + player.stats.dex * 0.6;
+  player.moving = false;
 
   if (player.autoAttackTarget && !player.autoAttackTarget.dead) {
     var target = player.autoAttackTarget;
     var d = dist(player.x, player.y, target.x, target.y);
     if (d > PLAYER_ATTACK_RANGE) {
       moveToward(player, target.x, target.y, speed, dt);
+    } else {
+      player.facing = Math.atan2(target.y - player.y, target.x - player.x);
     }
     return;
   }
@@ -37,6 +40,8 @@ function updatePlayerMovement(dt) {
 function moveToward(entity, tx, ty, speed, dt) {
   var dx = tx - entity.x, dy = ty - entity.y;
   var len = Math.sqrt(dx * dx + dy * dy) || 1;
+  entity.facing = Math.atan2(dy, dx);
+  entity.moving = true;
   var nx = entity.x + (dx / len) * speed * dt;
   var ny = entity.y + (dy / len) * speed * dt;
   if (Game.isWalkable(nx, entity.y)) entity.x = nx;
