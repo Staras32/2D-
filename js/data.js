@@ -177,27 +177,31 @@ Game.xpToNextLevel = function (level) {
 /* ---------------- Zones ---------------- */
 Game.ZONES = {
   village: {
-    id: 'village', name: 'Talkynės kaimas', width: 22, height: 15,
+    id: 'village', name: 'Talkynės kaimas', width: 40, height: 26,
     base: Game.TILE.PLAZA,
     rects: [
-      { x1: 0, y1: 0, x2: 21, y2: 0, tile: Game.TILE.WALL },
-      { x1: 0, y1: 14, x2: 21, y2: 14, tile: Game.TILE.WALL },
-      { x1: 0, y1: 0, x2: 0, y2: 14, tile: Game.TILE.WALL },
-      { x1: 21, y1: 0, x2: 21, y2: 14, tile: Game.TILE.WALL },
-      { x1: 2, y1: 2, x2: 5, y2: 4, tile: Game.TILE.WALL },
-      { x1: 16, y1: 2, x2: 19, y2: 4, tile: Game.TILE.WALL },
-      { x1: 2, y1: 10, x2: 5, y2: 12, tile: Game.TILE.WALL },
-      { x1: 16, y1: 10, x2: 19, y2: 12, tile: Game.TILE.WALL }
+      { x1: 0, y1: 0, x2: 39, y2: 0, tile: Game.TILE.WALL },
+      { x1: 0, y1: 25, x2: 39, y2: 25, tile: Game.TILE.WALL },
+      { x1: 0, y1: 0, x2: 0, y2: 25, tile: Game.TILE.WALL },
+      { x1: 39, y1: 0, x2: 39, y2: 25, tile: Game.TILE.WALL },
+      { x1: 4, y1: 3, x2: 9, y2: 6, tile: Game.TILE.WALL },
+      { x1: 30, y1: 3, x2: 35, y2: 6, tile: Game.TILE.WALL },
+      { x1: 4, y1: 19, x2: 9, y2: 22, tile: Game.TILE.WALL },
+      { x1: 30, y1: 19, x2: 35, y2: 22, tile: Game.TILE.WALL },
+      { x1: 17, y1: 3, x2: 22, y2: 5, tile: Game.TILE.WALL },
+      { x1: 17, y1: 20, x2: 22, y2: 22, tile: Game.TILE.WALL },
+      { x1: 12, y1: 9, x2: 14, y2: 10, tile: Game.TILE.WALL },
+      { x1: 25, y1: 15, x2: 27, y2: 16, tile: Game.TILE.WALL }
     ],
-    playerSpawn: { x: 11, y: 7 },
+    playerSpawn: { x: 20, y: 13 },
     npcs: [
-      { id: 'shop_aldon', name: 'Aldonas', type: 'shop', shopId: 'village_shop', x: 8, y: 7, color: '#c9a24a' },
-      { id: 'guard', name: 'Sargybinis Bertas', type: 'lore', x: 14, y: 7, color: '#7a8a9a',
+      { id: 'shop_aldon', name: 'Aldonas', type: 'shop', shopId: 'village_shop', x: 15, y: 13, color: '#c9a24a' },
+      { id: 'guard', name: 'Sargybinis Bertas', type: 'lore', x: 25, y: 13, color: '#7a8a9a',
         lines: ['Laukai už vartų knibžda nuo padarų — būk atsargus, keliauninke.',
                 'Urvas rytuose slepia dar pavojingesnius priešus.'] }
     ],
     portals: [
-      { x: 20, y: 7, r: 1.3, toZone: 'fields', toX: 3, toY: 12 }
+      { x: 38, y: 13, r: 1.3, toZone: 'fields', toX: 3, toY: 12 }
     ],
     monsterSpawns: []
   },
@@ -221,7 +225,7 @@ Game.ZONES = {
     playerSpawn: { x: 2, y: 12 },
     npcs: [],
     portals: [
-      { x: 1, y: 12, r: 1.3, toZone: 'village', toX: 18, toY: 7 },
+      { x: 1, y: 12, r: 1.3, toZone: 'village', toX: 36, toY: 13 },
       { x: 33, y: 2, r: 1.3, toZone: 'dungeon', toX: 5, toY: 9 }
     ],
     monsterSpawns: [
